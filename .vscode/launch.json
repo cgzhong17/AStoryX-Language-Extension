@@ -11,7 +11,7 @@
         "--user-data-dir=${workspaceFolder}/test/profiles/development",
         "--extensionDevelopmentPath=${workspaceFolder}/extension",
         "${workspaceFolder}/examples/demo",
-        "${workspaceFolder}/examples/demo/Stories/main.astoryx"
+        "${workspaceFolder}/examples/demo/Stories/00_基础示例上.astoryx"
       ],
       "outFiles": [
         "${workspaceFolder}/extension/out/**/*.js"

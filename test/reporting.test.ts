@@ -103,6 +103,19 @@ test('clearing resources, dynamic references, protected literals and advanced ru
   const custom=await new ResourceIndex(root).check(analyze(source('背景：bg,@FadeInTime=1'),advanced));
   assert.deepEqual([custom.issues[0].start,custom.issues[0].end],[3,5]);
 }));
+test('Music null clears music in both rule formats without suppressing other resource or parameter errors',async()=>sandbox(async root=>{
+  for(const [name,rules,music] of [
+    ['BaseRule',base,'音乐：null/1/3'],
+    ['AdvanceRule',advanced,'音乐：null,@FadeInTime=3']
+  ] as const){
+    const text=['说明','#useRule:'+name,music,'音乐：null_missing','背景：null','音效：null'].join('\n');
+    const analysis=analyze(text,rules);
+    const result=await new ResourceIndex(root).check(analysis);
+    assert.deepEqual(result.issues.map(i=>[i.line,i.code]),[[3,'E2001'],[4,'E2001'],[5,'E2001']]);
+    const invalid=analyze(['说明','#useRule:'+name,music.replace(/3$/,'null')].join('\n'),rules);
+    assert.ok(invalid.issues.some(i=>i.code==='E3006'));
+  }
+}));
 test('project/config errors use E1001/E1002 and syntax errors retain stable E/W codes',async()=>sandbox(async root=>{
   const script=path.join(root,'Stories/main.astoryx');
   assert.equal((await loadDocument(script,source(),[],path.join(root,'missing'))).issues[0].code,'E1001');
@@ -113,3 +126,38 @@ test('project/config errors use E1001/E1002 and syntax errors retain stable E/W 
   assert.ok(result.issues.some(i=>i.code==='W1001'&&i.severity==='warning'));
   assert.ok(result.issues.every(i=>i.code.startsWith({error:'E',warning:'W',information:'I'}[i.severity])));
 }));
+
+test('nested resources and manifest bundle entries are indexed by actual assets',async()=>sandbox(async root=>{
+  await file(root,'Resources/Music/sub/song.wav');
+  await file(root,'Resources/SoundEffect/sub/hit.ogg');
+  await file(root,'Resources/Background/sub/scene.png');
+  await file(root,'Resources/VisualEffect/prefab/effect.ab');
+  await file(root,'Resources/VisualEffect/texture/noise.ab');
+  await file(root,'Resources/VisualEffect/manifest.json',JSON.stringify({
+    present:{assetPath:'Assets/present.prefab',bundlePath:'prefab/effect.ab',dependencies:['texture/noise.ab']},
+    absent:{assetPath:'Assets/absent.prefab',bundlePath:'prefab/missing.ab'},
+    dependencyMissing:{assetPath:'Assets/other.prefab',bundlePath:'prefab/effect.ab',dependencies:['texture/missing.ab']}
+  }));
+  const index=new ResourceIndex(root);
+  assert.ok((await index.names('Music')).includes('sub/song'));
+  assert.deepEqual(await index.names('VisualEffect'),['present']);
+  const result=await index.check(analyze(source('音乐：song','音效：hit','背景：scene','特效：present','特效：absent','特效：dependencyMissing','音乐：hit'),base));
+  assert.deepEqual(result.issues.map(i=>[i.line,i.code]),[[6,'E2001'],[7,'E2001'],[8,'E2001']]);
+  await fs.unlink(path.join(root,'Resources/VisualEffect/prefab/effect.ab'));
+  assert.deepEqual(await new ResourceIndex(root).names('VisualEffect'),[]);
+}));
+test('invalid manifests report an index failure instead of speculative missing-resource errors',async()=>sandbox(async root=>{
+  await file(root,'Resources/VisualEffect/manifest.json','{');
+  const result=await new ResourceIndex(root).check(analyze(source('特效：present'),base));
+  assert.deepEqual(result.issues.map(i=>i.code),['E1004']);
+}));
+test('dialogue aliases ignore rich-text tags and validate each speaker with source ranges',()=>{
+  const text=source('#aliases','char->？？？/Stormeye/Pith','#endaliases',
+    '？？？<br>\t对话','<color=#fff>？？？&{</color>}<br>\t对话',
+    'Stormeye&Pith\t对话','Stormeye&未知<br>\t对话','// 未知<br>\t注释');
+  const analysis=analyze(text,base),issues=writingIssues(analysis);
+  assert.deepEqual(issues.map(i=>[i.line,i.code]),[[8,'W1001']]);
+  assert.equal(analysis.lines[8].slice(issues[0].start,issues[0].end),'未知');
+  assert.ok(issues[0].message.includes('未知'));
+  assert.ok(!analysis.speakers.some(name=>name.includes('<br>')||name==='Stormeye&Pith'));
+});

@@ -211,16 +211,19 @@ test('language feature fixtures pass the declared baseline checks',async()=>{
     assert.equal(result.failure,undefined);assert.deepEqual(result.issues.filter(i=>i.severity==='error'),[]);assert.deepEqual(result.analysis?.incomplete,[]);
   }
 });
-test('demo follows the extension project layout and loads its own rules',async()=>{
+test('official demo loads its project rules and local resources',async()=>{
   const root=path.join(project,'examples/demo');
   for(const name of ['Configs','Stories','Rules','Resources/Background','Resources/Char_Picture','Resources/Char_Spine','Resources/Music','Resources/SoundEffect','Resources/VisualEffect'])assert.ok((await fs.stat(path.join(root,name))).isDirectory(),name);
-  assert.equal(existsSync(path.join(root,'main.astoryx')),false);
-  const file=path.join(root,'Stories','main.astoryx'),result=await loadDocument(file,await fs.readFile(file,'utf8'));
-  assert.equal(result.root,root);assert.equal(result.failure,undefined);assert.deepEqual(result.issues.filter(i=>i.severity==='error'),[]);assert.deepEqual(result.analysis?.incomplete,[]);
-  assert.equal(result.rules?.rules.find(r=>r.id==='SoundEffect')?.optionalParameters.some(p=>p.parameterName==='AsVoice'),false);
-  assert.ok((await resourceNames(root,'Background')).includes('bg'));
-  assert.ok((await resourceNames(root,'Char_Picture')).includes('tianyu'));
-  assert.ok((await resourceNames(root,'Char_Picture','tianyu')).includes('0'));
+  const files=(await storyFiles(root,100)).files;assert.equal(files.length,3);
+  for(const file of files){
+    const result=await loadDocument(file,await fs.readFile(file,'utf8'));
+    assert.equal(result.root,root);assert.equal(result.failure,undefined);assert.ok(result.analysis);
+  }
+  assert.ok((await resourceNames(root,'Background')).includes('bg_amb2026'));
+  assert.ok((await resourceNames(root,'Char_Picture')).includes('mon3tr(amb2026)'));
+  assert.ok((await resourceNames(root,'Char_Picture','mon3tr(amb2026)')).includes('normal'));
+  assert.ok((await resourceNames(root,'Music')).includes('immutable_ins'));
+  assert.ok((await resourceNames(root,'VisualEffect')).includes('furnace_finale_back'));
 });
 test('resource completion works for Spine-only projects',async()=>sandbox(async root=>{
   await fs.mkdir(path.join(root,'Resources','Char_Spine','动态角色'),{recursive:true});

@@ -1,0 +1,4 @@
+{
+  "version": "2.0.0",
+  "tasks": [{ "label": "AStoryX: 检查项目", "type": "astoryx", "group": { "kind": "build", "isDefault": true }, "problemMatcher": [] }]
+}

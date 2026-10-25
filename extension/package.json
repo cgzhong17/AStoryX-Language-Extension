@@ -1,9 +1,9 @@
 {
   "name": "astoryx-language-tools",
   "displayName": "AStoryX Language Tools",
-  "description": "AStoryX 规则驱动补全、参数提示与静态检查，无需 Python。",
-  "version": "0.1.0",
-  "publisher": "astoryx-local",
+  "description": "AStoryX 规则驱动补全、参数提示与静态检查",
+  "version": "0.2.0",
+  "publisher": "cgzhong17",
   "license": "MIT",
   "homepage": "https://www.yuque.com/tsingyayin/aser",
   "engines": {
@@ -122,9 +122,20 @@
         "icon": "$(new-file)"
       },
       {
+        "command": "astoryx.runASER",
+        "title": "AStoryX: 启动 ASER 调试",
+        "icon": "$(play)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "astoryx.stopASER",
+        "title": "AStoryX: 停止 ASER",
+        "icon": "$(debug-stop)"
+      },
+      {
         "command": "astoryx.checkProject",
         "title": "AStoryX: 检查项目",
-        "icon": "$(play)"
+        "icon": "$(check)"
       },
       {
         "command": "astoryx.checkFile",
@@ -150,8 +161,13 @@
       ],
       "editor/title": [
         {
-          "command": "astoryx.checkProject",
-          "when": "resourceLangId == astoryx",
+          "command": "astoryx.runASER",
+          "when": "resourceLangId == astoryx && resourceScheme == file && isWorkspaceTrusted && !astoryx.aserRunning",
+          "group": "navigation"
+        },
+        {
+          "command": "astoryx.stopASER",
+          "when": "resourceLangId == astoryx && astoryx.aserRunning",
           "group": "navigation"
         }
       ],
@@ -245,6 +261,38 @@
           "minimum": 1,
           "maximum": 50000,
           "description": "单次项目检查的文件上限。超出时显示检查不完整。"
+        },
+        "astoryx.aser.executablePath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "ASE-Remake.exe 的路径。首次启动 ASER 调试时可选择程序并保存此设置。"
+        },
+        "astoryx.aser.windowSize": {
+          "type": "integer",
+          "default": 5,
+          "scope": "resource",
+          "enum": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "enumDescriptions": [
+            "全屏",
+            "3840×2160",
+            "2560×1440",
+            "1920×1080",
+            "1600×900",
+            "1280×720",
+            "1024×576",
+            "640×360"
+          ],
+          "description": "ASER 启动窗口大小，与 YSS 的 SizeMode 一致。"
         }
       }
     },
@@ -269,7 +317,7 @@
   "scripts": {
     "compile": "node ../tools/build.mjs",
     "watch": "tsc -watch -p ../config/tsconfig.json",
-    "test": "npm run compile && node --test out/test/core.test.js out/test/reporting.test.js out/test/official-assets.test.js out/test/inlay-hints.test.js out/test/diagnostic-codes.test.js out/test/aliases.test.js out/test/project-template.test.js",
+    "test": "npm run compile && node --test out/test/core.test.js out/test/reporting.test.js out/test/official-assets.test.js out/test/inlay-hints.test.js out/test/diagnostic-codes.test.js out/test/aliases.test.js out/test/project-template.test.js out/test/aser-runner.test.js",
     "vscode:prepublish": "node ../tools/build.mjs",
     "package": "node ../tools/package.mjs",
     "test:host": "npm run compile && node ../tools/test-host.mjs"

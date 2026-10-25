@@ -131,3 +131,53 @@ test('failed official configuration reports E1003 without speculative source/var
   assert.deepEqual(await loadOfficialCatalog(root,path.join(root,'missing')),[]);
   assert.ok((await loadOfficialCatalog(root,path.join(root,'missing'),undefined,true))[0].failure);
 }));
+
+test('project overrides merge resource entries and aliases without dropping global names',async()=>sandbox(async root=>{
+  const directory=path.join(root,'global');
+  await write(directory,'officialAssets_collections.json',collections);
+  await write(directory,'officialAssets_userConfigs.json',configs);
+  await write(directory,'officialAssets_aliases.json',{musics:{m_remote:'旧音乐名'},soundEffects:{s_remote:'保留音效'}});
+  await write(root,'Configs/override_userConfigs.json',{characterTachieOfficialConfigs:{avg_4179_monstr_1:{name:'新mon3tr',variationNames:{'#1$1':'新差分'}}},characterSpineOfficialConfigs:{}});
+  const aliasFile=await write(root,'Configs/override_aliases.json',{musics:{m_remote:'已至'},soundEffects:{}});
+  const index=new ResourceIndex(root,await loadOfficialCatalog(root,directory));
+  assert.deepEqual(await index.names('Char_Picture','凯尔希'),['wink','默认']);
+  assert.deepEqual(await index.names('Char_Picture','新mon3tr'),['新差分']);
+  assert.ok((await index.names('SoundEffect')).includes('保留音效'));
+  assert.ok(!(await index.names('Music')).includes('旧音乐名'));
+  assert.deepEqual((await index.check(analyze(source('音乐：已至','音效：保留音效','--新mon3tr:新差分/0'),base))).issues,[]);
+  const edited=await loadOfficialCatalog(root,directory,{exists:async file=>{try{await fs.stat(file);return true;}catch{return false;}},readText:async file=>file===aliasFile?JSON.stringify({musics:{m_remote:'未保存名'}}):fs.readFile(file,'utf8')});
+  assert.ok((await new ResourceIndex(root,edited).names('Music')).includes('未保存名'));
+}));
+test('project aliases work for local resources without global collections and do not invent missing resources',async()=>sandbox(async root=>{
+  await fs.mkdir(path.join(root,'Resources/Music'),{recursive:true});
+  await fs.writeFile(path.join(root,'Resources/Music/song.wav'),'fixture');
+  await write(root,'Configs/override_aliases.json',{musics:{song:'本地音乐',missing:'不存在音乐'}});
+  const index=new ResourceIndex(root,await loadOfficialCatalog(root,undefined));
+  assert.ok((await index.names('Music')).includes('本地音乐'));
+  assert.ok(!(await index.names('Music')).includes('不存在音乐'));
+  const result=await index.check(analyze(source('音乐：本地音乐','音乐：不存在音乐','音效：本地音乐'),base));
+  assert.deepEqual(result.issues.map(i=>[i.line,i.code]),[[3,'E2001'],[4,'E2001']]);
+}));
+test('local and catalog resource names take precedence over conflicting script aliases',async()=>sandbox(async root=>{
+  await fs.mkdir(path.join(root,'Resources/Music'),{recursive:true});
+  await fs.writeFile(path.join(root,'Resources/Music/song.wav'),'fixture');
+  const result=await new ResourceIndex(root,[catalog()]).check(analyze(source('#aliases','m_remote->song','m_remote->s_remote','#endaliases','音乐：song','音效：s_remote'),base));
+  assert.deepEqual(result.issues,[]);
+}));
+test('malformed overrides report the configuration failure',async()=>sandbox(async root=>{
+  await write(root,'Configs/override_aliases.json',{musics:{song:42}});
+  const loaded=await loadOfficialCatalog(root,undefined);
+  assert.ok(loaded[0].failure?.includes('aliases.musics.song'));
+  const result=await new ResourceIndex(root,loaded).check(analyze(source('音乐：song'),base));
+  assert.deepEqual(result.issues.map(i=>i.code),['E1003']);
+}));
+
+test('configured character aliases validate dialogue names only when their resource exists',async()=>sandbox(async root=>{
+  await fs.mkdir(path.join(root,'Resources/Char_Picture/local'),{recursive:true});
+  await fs.writeFile(path.join(root,'Resources/Char_Picture/local/normal.png'),'fixture');
+  await write(root,'Configs/override_aliases.json',{characterTachies:{local:'本地别名',missing:'无来源别名'}});
+  const index=new ResourceIndex(root,await loadOfficialCatalog(root,undefined));
+  assert.deepEqual(await index.names('Char_Picture','本地别名'),['normal']);
+  const analysis=analyze(source('本地别名<br>\t对话','无来源别名\t对话'),base);
+  assert.deepEqual(writingIssues(analysis,{knownSpeakers:await index.speakerNames()}).map(i=>[i.line,i.code]),[[3,'W1001']]);
+}));

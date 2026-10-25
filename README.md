@@ -1,6 +1,6 @@
 # AStoryX Language Tools
 
-AStoryX 剧本的 VS Code 编辑辅助工具
+AStoryX 剧本的 VS Code 编辑辅助工具，提供规则驱动补全、静态检查与 ASER 调试启动。
 
 语言参考：[ASER 知识库与参数文档](https://www.yuque.com/tsingyayin/aser)。
 
@@ -11,6 +11,7 @@ README 位于仓库根目录，其他内容按用途归档：
 ```text
 AstoryX Language Extension/
 ├─ README.md     项目介绍与使用说明
+├─ CHANGELOG.md  版本更新记录
 ├─ LICENSE       MIT 许可证
 ├─ .vscode/      F5 调试和构建任务
 ├─ src/          TypeScript 源码
@@ -24,20 +25,20 @@ AstoryX Language Extension/
 └─ dist/         VSIX 安装包
 ```
 
-扩展根目录为 `extension`，其 `package.json` 是 VS Code 使用的清单。公开文档为根目录 README 和 [错误码与提示消息表](docs/ERROR_MESSAGES.md)，编译时自动复制到扩展目录用于打包。许可文件位于 `LICENSE`；生成副本、依赖和日志均由 `.gitignore` 排除。
+扩展根目录为 `extension`，其 `package.json` 是 VS Code 使用的清单。公开文档为根目录 README、[更新记录](CHANGELOG.md) 和 [错误码与提示消息表](docs/ERROR_MESSAGES.md)，编译时自动复制到扩展目录用于打包。许可文件位于 `LICENSE`；生成副本、依赖和日志均由 `.gitignore` 排除。
 
 ## 安装和开始使用
 
 1. VS Code 需要 1.96 或更新版本。
-2. 打开扩展面板，点击右上角 `…` → **从 VSIX 安装…**，选择 `dist` 目录生成的 `astoryx-language-tools-0.1.0.vsix`。
+2. 打开扩展面板，点击右上角 `…` → **从 VSIX 安装…**，选择 `dist` 目录生成的最新 VSIX 安装包。
 3. 打开你的 ASER 项目目录，建议目录中同时有 `Stories`、`Rules` 和 `Resources`。也可以直接打开项目中的 `.astoryx` 文件。
 4. 确认第二行是 `#useRule:BaseRule` 或项目实际使用的规则名。规则来自该项目的 `Rules/规则名.json`，不会用内置版本覆盖。
 5. 编辑文件时会出现候选、参数提示、悬停说明和错误波浪线。按 `Ctrl+Space` 手动打开候选，按 `Ctrl+Shift+Space` 手动打开参数提示。
-6. 点击编辑器右上角 ▶，或执行 **AStoryX: 检查项目**，扫描项目 `Stories` 下全部 `.astoryx`。
+6. 点击状态栏，或执行 **AStoryX: 检查项目**，扫描项目 `Stories` 下全部 `.astoryx`。
 
-右上角按钮只执行基础静态检查，不播放或实际运行剧情。发现问题后，在 Problems 面板（`Ctrl+Shift+M`）点击对应条目跳转到行列；详细日志通过 **AStoryX: 查看检查日志** 打开。
+编辑器右上角 ▶ 用于启动 ASER 调试，播放当前剧本。静态检查发现问题后，在 Problems 面板（`Ctrl+Shift+M`）点击对应条目跳转到行列；详细日志通过 **AStoryX: 查看检查日志** 打开。
 
-`examples/demo` 是 F5 调试示例项目，入口为 `Stories/main.astoryx`。`test/fixtures/language-demo` 提供 BaseRule/AdvanceRule 测试素材。
+`examples/demo` 是官方演示项目，F5 默认打开 `Stories/00_基础示例上.astoryx`。`test/fixtures/language-demo` 提供 BaseRule/AdvanceRule 测试素材。
 
 demo 用于本地 F5 调试，`examples` 和 `test` 均排除在 VSIX 安装包之外。
 
@@ -83,7 +84,7 @@ demo 用于本地 F5 调试，`examples` 和 `test` 均排除在 VSIX 安装包�
 #endaliases
 ```
 
-## 第一版功能
+## 功能
 
 - 按项目规则识别全部 21 类控制器，支持自定义行首、参数顺序和前缀。
 - 提供控制器、预处理器、规则名、参数、标记、变量及资源候选。
@@ -92,14 +93,17 @@ demo 用于本地 F5 调试，`examples` 和 `test` 均排除在 VSIX 安装包�
 - 读取官方资源配置，提供角色名与差分候选。
 - 支持标记跳转、文块候选和参数签名。
 - 识别保护文段，支持 VS Code 构建任务。
+- 支持 ASER 调试启动：右上角 ▶ 加载当前项目并播放当前剧本，运行时可点击 ■ 停止。
+
+项目 `Configs/override_userConfigs.json` 和 `Configs/override_aliases.json` 按资源条目覆盖原配置，未指定的条目继续保留。
 
 ### 静态检查
 
 支持未保存文档的实时检查和全项目手动检查。错误使用红色波浪线，警告使用黄色波浪线；Problems 面板显示原因与位置，修复后自动更新。
 
 - **语法检查**：参数缺失、重复、未知，类型或范围不符，以及表达式不合法时报告错误；规则无法识别的语句或解析模式配置不一致时报告警告。
-- **路径检查**：项目、规则或资源配置不可用，或引用的资源不存在时报告错误。
-- **别名检查**：人物别名既未收录也未提前声明，或别名区块未闭合、顺序错误、嵌套、格式不合法、重复指定时报告警告；循环引用或来源资源不存在时报告错误。
+- **路径检查**：项目、规则或资源配置不可用，或引用的资源不存在时报告错误。资源按类别查找本地目录及子目录，再匹配官方收录和配置别名；支持资源包的 manifest 清单。
+- **别名检查**：人物别名既未收录也未提前声明，或别名区块未闭合、顺序错误、嵌套、格式不合法、重复指定时报告警告；循环引用或来源资源不存在时报告错误。人物名中的富文本标签不参与别名匹配，多人发言逐个检查。
 - **差分检查**：已收录角色引用不存在的差分，或原始 ID 的差分资料不完整时报告警告。
 - **标记与文块检查**：重复定义、引用目标不存在，或文块定义及调用不合法时报告错误。
 - **写作规范检查**：对话用空格代替 Tab，或角色与差分之间误用中文冒号时报告警告。
@@ -114,6 +118,12 @@ demo 用于本地 F5 调试，`examples` 和 `test` 均排除在 VSIX 安装包�
 支持自定义规则、实时编辑及深色、浅色和高对比主题切换。可通过 `astoryx.highlighting.enabled` 开关配色，通过 `workbench.colorCustomizations` 自定义颜色。
 
 AStoryX 默认关闭全角标点的 Unicode 歧义字符提醒。`.astoryx` 文件默认使用真实 Tab，并关闭自动缩进检测；新建项目会生成相应设置。BaseRule 中，人物名与台词使用真实 Tab 分隔。
+
+## 启动 ASER 调试
+
+打开项目内的剧本，点击编辑器右上角 ▶。首次使用时选择 `ASE-Remake.exe`，扩展会保存路径；随后按 YSS 的方式启动 ASER、加载当前项目并播放当前剧本。运行期间点击 ■ 停止，剧情退出后关闭本次启动的 ASER。
+
+启动前保存当前项目内已打开且修改过的剧本与 JSON 配置。可在设置中修改 `astoryx.aser.executablePath` 和窗口大小 `astoryx.aser.windowSize`；窗口默认 1280×720。此功能使用 Windows 调试管道。
 
 ## 项目布局与设置
 
@@ -173,7 +183,7 @@ MyProject/
 
 项目不是工作区根目录时，任务中可以添加 `"project": "./MyProject"`。诊断由扩展直接写入 Problems 面板，不需要输出正则匹配器。退出码 0 表示范围内检查完成且无错误，1 表示语言错误，2 表示工具失败、取消或检查不完整。
 
-构建任务遵循 VS Code 的工作区信任要求；受限模式下可先使用编辑功能和扩展自己的检查按钮。
+构建任务遵循 VS Code 的工作区信任要求；受限模式下可使用编辑功能和静态检查。
 
 ## 状态与当前限制
 
@@ -195,8 +205,9 @@ Complete 的范围是基础静态检查。它不证明演出效果正确，也�
 | --- | --- |
 | `src/extension.ts` | VS Code 功能与命令接入 |
 | `src/core.ts`、`src/project.ts` | 语法解析、项目与规则读取 |
-| `src/aliases.ts`、`src/writing-checks.ts` | 别名与写作规范检查 |
+| `src/aliases.ts`、`src/writing-checks.ts`、`src/rich-text.ts` | 别名、富文本人物名与写作规范检查 |
 | `src/resources.ts`、`src/official-assets.ts` | 本地资源索引与官方配置读取 |
+| `src/aser-runner.ts` | ASER 启动、管道播放与停止 |
 | `src/diagnostic-codes.ts` | 错误码和消息模板；修改后同步[错误消息表](docs/ERROR_MESSAGES.md) |
 | `src/highlighting.ts`、`src/inlay-hints.ts` | 配色与参数名内联提示 |
 | `src/new-*.ts`、`src/*-template.ts` | 新建文件、项目及模板生成 |

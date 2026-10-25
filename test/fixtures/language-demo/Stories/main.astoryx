@@ -2,7 +2,7 @@ AStoryX VS Code 扩展示例
 #useRule:BaseRule
 #version:2
 
-// 右上角“检查项目”只做静态检查，不播放此剧本。
+// “检查项目”命令只做静态检查，不播放此剧本。
 背景：none/1
 遮罩：true
 旁白	这是一行使用真实 Tab 分隔人物和台词的对话。

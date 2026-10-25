@@ -3,6 +3,5 @@ out/test/**
 **/*.map
 package-lock.json
 .gitignore
-CHANGELOG.md
 docs/**
 !docs/ERROR_MESSAGES.md

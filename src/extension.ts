@@ -11,6 +11,7 @@ import {defaultOfficialConfigDirectory,loadOfficialCatalog} from './official-ass
 import {parameterHints} from './inlay-hints';
 import {newStoryFile} from './new-story';
 import {newProject} from './new-project';
+import {ASERRunner} from './aser-runner';
 
 const selector: vscode.DocumentSelector = {language:'astoryx',scheme:'file'};
 const directives = ['useRule','version','aliases','endaliases','block','endblock','use'];
@@ -21,6 +22,11 @@ export function activate(context: vscode.ExtensionContext) {
   const diagnostics = vscode.languages.createDiagnosticCollection('astoryx');
   const output = vscode.window.createOutputChannel('AStoryX');
   output.appendLine(`AStoryX ${context.extension.packageJSON.version} 已加载：${context.extensionPath}`);
+  const aser=new ASERRunner(value=>{void vscode.commands.executeCommand('setContext','astoryx.aserRunning',value);},error=>{
+    output.appendLine('ASER：'+error.message);void vscode.window.showErrorMessage('ASER：'+error.message);
+  });
+  context.subscriptions.push(aser);
+  void vscode.commands.executeCommand('setContext','astoryx.aserRunning',false);
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left,80);
   status.command = 'astoryx.checkProject';
   const tokensChanged = new vscode.EventEmitter<void>();
@@ -78,7 +84,7 @@ export function activate(context: vscode.ExtensionContext) {
         officialWatchers.set(directory,watcher);
         context.subscriptions.push(watcher,watcher.onDidChange(rulesChanged),watcher.onDidCreate(rulesChanged),watcher.onDidDelete(rulesChanged));
       }
-      index=(async()=>new ResourceIndex(root,enabled?await loadOfficialCatalog(root,directory,io,!!configured):[],{readDirectory:directory=>fs.readdir(directory,{withFileTypes:true}),readText:io.readText}))();
+      index=(async()=>new ResourceIndex(root,await loadOfficialCatalog(root,enabled?directory:undefined,io,enabled&&!!configured),{readDirectory:directory=>fs.readdir(directory,{withFileTypes:true}),readText:io.readText}))();
       indexes.set(root,index);
     }
     return index;
@@ -90,7 +96,7 @@ export function activate(context: vscode.ExtensionContext) {
       const parsed=await data(document),notes=[...(parsed.notes??[])];
       if(!parsed.root||!parsed.analysis)return {...parsed,version,generation};
       const index=await resourceIndex(parsed.root);
-      const writing=writingIssues(parsed.analysis,{maxLineLength:configuration(document.uri).get<number|null>('validation.maxLineLength',DEFAULT_MAX_LINE_LENGTH),knownSpeakers:index.configuredNames(),namesUnverified:index.catalogs.some(c=>c.official&&c.failure)});
+      const writing=writingIssues(parsed.analysis,{maxLineLength:configuration(document.uri).get<number|null>('validation.maxLineLength',DEFAULT_MAX_LINE_LENGTH),knownSpeakers:await index.speakerNames(),namesUnverified:index.catalogs.some(c=>c.official&&c.failure)});
       const writingCodes=new Set<string>([CODES.aliasUndeclared,CODES.dialogueSpaces,CODES.lineLength]);
       const issues=[...parsed.issues.filter(issue=>!writingCodes.has(issue.code)),...writing];
       if(!configuration(document.uri).get<boolean>('validation.resourceChecks',true)){
@@ -307,6 +313,27 @@ export function activate(context: vscode.ExtensionContext) {
     throw new Error('未找到项目。请先打开项目内的 .astoryx 文件，或设置 astoryx.projectRoot。');
   }
 
+  async function runASER():Promise<void>{
+    const document=vscode.window.activeTextEditor?.document;
+    if(!vscode.workspace.isTrusted||document?.languageId!=='astoryx'||document.uri.scheme!=='file')return;
+    try{
+      const config=configuration(document.uri);
+      const root=await discoverRoot(document.uri.fsPath,folders(),config.get<string>('projectRoot',''),io);
+      if(!root)throw new Error('未找到当前剧本的项目目录。');
+      let executable=config.get<string>('aser.executablePath','').trim();
+      if(!executable){
+        const selected=await vscode.window.showOpenDialog({title:'选择 ASE-Remake.exe',canSelectFiles:true,canSelectFolders:false,canSelectMany:false,filters:{'ASER 程序':['exe']}});
+        if(!selected?.length)return;
+        executable=selected[0].fsPath;
+        await config.update('aser.executablePath',executable,vscode.ConfigurationTarget.Global);
+      }
+      for(const doc of vscode.workspace.textDocuments.filter(d=>d.uri.scheme==='file'&&inside(root,d.uri.fsPath)&&d.isDirty&&(d.languageId==='astoryx'||/\.json$/i.test(d.uri.fsPath)))){
+        if(!await doc.save())return;
+      }
+      await aser.start(path.resolve(root,executable),root,document.uri.fsPath,config.get<number>('aser.windowSize',5));
+    }catch(error){void vscode.window.showErrorMessage('ASER：'+String(error));}
+  }
+
   async function checkProject(rootArgument?:string,externalToken?:vscode.CancellationToken,write:(s:string)=>void=s=>output.appendLine(s)):Promise<number> {
     if(checking){write('已有项目检查正在运行。');return 2;}
     checking=true;last=undefined;const sequence=++checkSequence;updateStatus();
@@ -415,13 +442,15 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.tasks.registerTaskProvider('astoryx',taskProvider),
     vscode.commands.registerCommand('astoryx.newFile',newStoryFile),
     vscode.commands.registerCommand('astoryx.newProject',(resource?:vscode.Uri)=>newProject(path.join(context.extensionPath,'templates/project'),resource)),
+    vscode.commands.registerCommand('astoryx.runASER',runASER),
+    vscode.commands.registerCommand('astoryx.stopASER',()=>aser.stop()),
     vscode.commands.registerCommand('astoryx.checkProject',()=>checkProject()),
     vscode.commands.registerCommand('astoryx.showOutput',()=>output.show()),
     vscode.commands.registerCommand('astoryx.checkFile',async()=>{
       const doc=vscode.window.activeTextEditor?.document;if(doc?.languageId!=='astoryx')return;
       const result=await report(doc);await publish(doc,result);const errors=result.issues.filter(i=>i.severity==='error').length;
       output.appendLine(`当前文件 ${doc.uri.fsPath}：${errors} 个错误（不代表全项目检查结果）。`);
-      void vscode.window.showInformationMessage(`AStoryX 当前文件：${errors} 个错误。项目检查请使用右上角按钮。`);
+      void vscode.window.showInformationMessage(`AStoryX 当前文件：${errors} 个错误。项目检查请点击状态栏或执行“AStoryX: 检查项目”。`);
     }),
     vscode.workspace.onDidOpenTextDocument(doc=>void validate(doc)),
     vscode.workspace.onDidChangeTextDocument(event=>{

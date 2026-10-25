@@ -13,6 +13,7 @@ export interface ResourceCatalog {
   resources:Partial<Record<ResourceCategory,ResourceRecord[]>>;
   failure?:string;
   official?:boolean;
+  aliases?:Partial<Record<ResourceCategory,{name:string;target:string}[]>>;
   officialRawIds?:Partial<Record<ResourceCategory,string[]>>;
 }
 export interface ResourceAccess {
@@ -29,15 +30,22 @@ export class ResourceIndex {
   private readonly categories=new Map<ResourceCategory,Promise<CategoryIndex>>();
   private readonly configured=new Map<string,ResourceRecord>();
   constructor(readonly root:string,readonly catalogs:ResourceCatalog[]=[],private readonly access:ResourceAccess=disk){
-    const records=catalogs.filter(c=>c.official&&!c.failure).flatMap(c=>c.resources.Char_Picture??[]).filter(r=>r.configuredName);
+    const records=catalogs.filter(c=>!c.failure).flatMap(c=>c.resources.Char_Picture??[]).filter(r=>r.configuredName);
     for(const record of records)if(record.rawId)this.configured.set(record.rawId,record);
-    for(const record of records)this.configured.set(record.configuredName!,record);
+    for(const record of records){this.configured.set(record.name,record);this.configured.set(record.configuredName!,record);}
   }
   configuredCharacter(name:string):ResourceRecord|undefined {
     return this.configured.get(name);
   }
   configuredNames():ReadonlySet<string>{
     return new Set(this.configured.keys());
+  }
+  async speakerNames():Promise<ReadonlySet<string>>{
+    const names=new Set(this.configuredNames()),local=await this.load('Char_Picture');
+    for(const catalog of this.catalogs.filter(c=>!c.failure))for(const alias of catalog.aliases?.Char_Picture??[]){
+      if(local.records.has(alias.name)||this.catalogs.some(c=>!c.failure&&c.resources.Char_Picture?.some(r=>r.name===alias.name)))names.add(alias.name);
+    }
+    return names;
   }
   resolveCharacter(table:AliasTable,name:string,line:number){
     const resolved=resolveAliasDetails(table,name,line,candidate=>!!this.configuredCharacter(candidate));
@@ -57,8 +65,34 @@ export class ResourceIndex {
     try{
       const entries=await this.entries(directory);
       if(category!=='Char_Picture'){
-        for(const entry of entries)if(entry.isFile()&&formats[category].test(entry.name)){
-          const name=path.parse(entry.name).name;records.set(name,{name});
+        const files=new Set<string>(),manifests:string[]=[];
+        const walk=async(folder:string,children:Dirent[]):Promise<void>=>{
+          for(const entry of children){
+            const file=path.join(folder,entry.name);
+            if(entry.isDirectory()){
+              try{await walk(file,await this.entries(file));}catch(error){failures.push({source:file,message:String(error)});}
+            }else if(entry.isFile()){
+              files.add(path.resolve(file));
+              if(entry.name==='manifest.json')manifests.push(file);
+              if(formats[category].test(entry.name)){
+                const name=path.parse(entry.name).name,relative=path.relative(directory,file).replace(/\\/g,'/').slice(0,-path.extname(entry.name).length);
+                records.set(name,{name});records.set(relative,{name:relative});
+              }
+            }
+          }
+        };
+        await walk(directory,entries);
+        for(const manifest of manifests){
+          try{
+            const raw:unknown=JSON.parse((await this.access.readText(manifest)).replace(/^\uFEFF/,''));
+            if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('资源 manifest 必须是对象。');
+            for(const [name,value]of Object.entries(raw)){
+              if(!value||typeof value!=='object'||typeof value.assetPath!=='string'||typeof value.bundlePath!=='string'||(value.dependencies!==undefined&&(!Array.isArray(value.dependencies)||value.dependencies.some((v:unknown)=>typeof v!=='string'))))throw new Error(`资源 ${name} 的 manifest 条目无效。`);
+              // assetPath 是包内路径；磁盘上应存在资源包及其依赖。
+              const paths=[value.bundlePath,...(value.dependencies??[])].map((v:string)=>path.resolve(path.dirname(manifest),v));
+              if(paths.every((file:string)=>files.has(file)))records.set(name,{name});
+            }
+          }catch(error){failures.push({source:manifest,message:String(error)});}
         }
       }else{
         for(const entry of entries.filter(e=>e.isDirectory())){
@@ -89,6 +123,11 @@ export class ResourceIndex {
         }
       }
     }catch(error){failures.push({source:directory,message:String(error)});}
+    // 配置别名不会凭空创建资源，只有本地来源存在时才加入本地索引。
+    for(const catalog of this.catalogs.filter(c=>!c.failure))for(const alias of catalog.aliases?.[category]??[]){
+      const record=records.get(alias.target);
+      if(record&&!records.has(alias.name))records.set(alias.name,{...record,name:alias.name});
+    }
     return {records,failures};
   }
   async names(category:ResourceCategory,character?:string):Promise<string[]>{
@@ -166,9 +205,13 @@ export class ResourceIndex {
         const raw=resource.value.trim();if(!raw)continue;
         const clearAllowed=['Background','Music','SoundEffect','Character','Interlude'].includes(parsed.rule.id);
         if(clearAllowed&&/^(无|none)$/i.test(raw))continue;
+        if(parsed.rule.id==='Music'&&raw==='null')continue;
         if(/\$[([]/.test(raw)){incomplete.add('动态资源名未验证。');continue;}
         const literal=raw.startsWith('&{')&&raw.endsWith('}')?raw.slice(2,-1):raw;
-        const resolution=category==='Char_Picture'?this.resolveCharacter(table,literal,line):resolveAliasDetails(table,literal,line);
+        const exists=(name:string)=>local.records.has(name)||this.catalogs.some(c=>!c.failure&&c.resources[category]?.some(r=>r.name===name));
+        const resolution=category==='Char_Picture'
+          ?resolveAliasDetails(table,literal,line,name=>!!this.configuredCharacter(name)||exists(name))
+          :resolveAliasDetails(table,literal,line,exists);
         if(resolution.chain.some(declaration=>badAliases.has(declaration.line+':'+declaration.target)))continue;
         const name=resolution.name,configured=category==='Char_Picture'?this.configuredCharacter(name):undefined;
         if(resolution.cycle){const start=required.start+part.start+resource.start+resource.value.search(/\S/u);issues.push(createIssue('alias','cycle',{line,start,end:start+raw.length}));continue;}

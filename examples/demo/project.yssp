@@ -1,0 +1,72 @@
+{
+    "Editor": {
+        "FocusedFile": "./Stories/02_基础？？？.astoryx",
+        "OpenedFiles": [
+            "./Stories/00_基础示例上.astoryx",
+            "./Stories/01_基础示例下.astoryx",
+            "./Stories/02_基础？？？.astoryx"
+        ],
+        "OpenedFilesExtra": {
+            "s_1": [
+                "@YSS.MainEditor.ResourceBrowser!资源浏览器?"
+            ],
+            "s_2": [
+                "@YSS.MainEditor.MessageViewer!消息查看器?"
+            ]
+        }
+    },
+    "MetaData": {
+        "cn": {
+            "yxgeneral": {
+                "aserstudio": {
+                    "ASERVersion": "3.6.7"
+                }
+            }
+        }
+    },
+    "Project": {
+        "Author": "",
+        "CreateTime": "2026-10-25 07:24:01",
+        "DebugServerID": "cn.yxgeneral.aserstudio.astoryxdebugger",
+        "Description": "",
+        "IconPath": "cover.png",
+        "LastModifyTime": "2026-10-25 07:24:01",
+        "Name": "ASE Story Project Sample",
+        "RequiredPlugins": [
+        ],
+        "Version": "0.2.0"
+    },
+    "TreeLayout": {
+        "default": {
+            "children": [
+                {
+                    "areaID": "1",
+                    "percent": 0.2848101265822785,
+                    "type": "area"
+                },
+                {
+                    "children": [
+                        {
+                            "areaID": "0",
+                            "percent": 0.75,
+                            "type": "area"
+                        },
+                        {
+                            "areaID": "2",
+                            "percent": 0.25,
+                            "type": "area"
+                        }
+                    ],
+                    "percent": 0.7151898734177216,
+                    "type": "layout"
+                }
+            ],
+            "h": 480,
+            "maximized": false,
+            "orientation": "horizontal",
+            "screen": 0,
+            "topLayoutID": "0",
+            "w": 640
+        }
+    }
+}

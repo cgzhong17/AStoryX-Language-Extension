@@ -1,3 +1,4 @@
+import {dialogueNames} from './rich-text';
 import {scanAliases,AliasTable} from './aliases';
 import {createIssue,diagnosticMessage} from './diagnostic-codes';
 import type {Issue} from './diagnostic-codes';
@@ -290,7 +291,7 @@ export function analyze(text: string, rules: RuleSet): Analysis {
       const output = result.segments.find(s=>s.name==='OutputVariable');
       variables.push({name:output?.value.trim() || 'choice',line,start:output?.start??required.start,end:output?.end??required.end});
     }
-    if (result.rule.id === 'Dialog') { const tab = required.value.indexOf(result.rule.requiredParametersSeparator); if (tab > 0) speakers.add(required.value.slice(0,tab).trim()); }
+    if (result.rule.id === 'Dialog') { const tab = required.value.indexOf(result.rule.requiredParametersSeparator); if (tab > 0) for(const entry of dialogueNames(required.value.slice(0,tab)))speakers.add(entry.name); }
     if (result.rule.id === 'Branch') {
       const branches = result.segments.find(s=>s.name==='Branches');
       if (branches) for (const part of splitTopLevel(branches.value,',')) if (part.value.trim()) labelRefs.push({name:part.value.trim(),line,start:branches.start+part.start,end:branches.start+part.end,deferred:!!block || /\$[([]/.test(part.value)});

@@ -1,3 +1,4 @@
+import {dialogueNames,richTextTag} from './rich-text';
 import {scanAliases,AliasDeclaration,AliasTable} from './aliases';
 import {Analysis, Issue, ParsedLine, protection, requiredParts} from './core';
 import {createIssue} from './diagnostic-codes';
@@ -40,12 +41,11 @@ export function dialogueSplit(parsed:ParsedLine):number {
 function visibleCharacters(value:string,offset:number):{start:number;end:number}[]|undefined {
   if(/\$[([]/.test(value))return undefined;
   const characters:{value:string;start:number;end:number}[]=[];
-  const tags=/^<\/?(?:color|size|b|i|u|s|alpha|font|material|mark|cspace|mspace|voffset|indent|line-indent|link|align|width|margin|line-height|noparse|nobr|sub|sup|br)(?:=[^<>]*|\s[^<>]*)?\s*\/?\s*>/i;
   let protectedDepth=0;
   for(let i=0;i<value.length;){
     if(value.startsWith('&{',i)){protectedDepth++;i+=2;continue;}
     if(value[i]==='}'&&protectedDepth){protectedDepth--;i++;continue;}
-    const tag=tags.exec(value.slice(i));if(tag){i+=tag[0].length;continue;}
+    const tag=richTextTag.exec(value.slice(i));if(tag){i+=tag[0].length;continue;}
     const character=String.fromCodePoint(value.codePointAt(i)!);
     characters.push({value:character,start:offset+i,end:offset+i+character.length});i+=character.length;
   }
@@ -70,7 +70,7 @@ export function writingIssues(analysis:Analysis,options:WritingOptions={}):Issue
     }
     if(parsed.rule.id==='Dialog'){
       const split=dialogueSplit(parsed);
-      if(split>0)known.add(parsed.segments[0].value.slice(0,split).trim());
+      if(split>0)for(const entry of dialogueNames(parsed.segments[0].value.slice(0,split)))known.add(entry.name);
     }
   }
   const sortedNames=[...known].filter(Boolean).sort((a,b)=>b.length-a.length);
@@ -91,10 +91,9 @@ export function writingIssues(analysis:Analysis,options:WritingOptions={}):Issue
         }
       }
       if(split>=0){
-        const raw=body.slice(0,split),name=raw.trim();hasSpeaker=!!name;
-        if(name&&!uncertain&&!/\$[([]/.test(name)&&!options.knownSpeakers?.has(name)&&!table.entries.some(e=>e.name===name&&e.availableAfter<line)){
-          const start=required.start+raw.search(/\S/u);
-          issues.push(createIssue('aliasUndeclared','default',{line,start,end:start+name.length},{name}));
+        const names=dialogueNames(body.slice(0,split));hasSpeaker=names.length>0;
+        for(const {name,start,end}of names)if(!uncertain&&!/\$[([]/.test(name)&&!options.knownSpeakers?.has(name)&&!table.entries.some(e=>e.name===name&&e.availableAfter<line)){
+          issues.push(createIssue('aliasUndeclared','default',{line,start:required.start+start,end:required.start+end},{name}));
         }
         const from=split+parsed.rule.requiredParametersSeparator.length;
         body=body.slice(from);bodyStart+=from;

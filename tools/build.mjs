@@ -12,3 +12,4 @@ for(const directory of ['test/tmp','log/results','log/host','dist','extension/do
 await fs.copyFile(path.join(repo,'README.md'),path.join(extension,'README.md'));
 await fs.copyFile(path.join(repo,'LICENSE'),path.join(extension,'LICENSE'));
 await fs.copyFile(path.join(repo,'docs/ERROR_MESSAGES.md'),path.join(extension,'docs/ERROR_MESSAGES.md'));
+await fs.copyFile(path.join(repo,'CHANGELOG.md'),path.join(extension,'CHANGELOG.md'));
