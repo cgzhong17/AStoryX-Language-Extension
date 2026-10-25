@@ -30,7 +30,11 @@ AstoryX Language Extension/
 ## 安装和开始使用
 
 1. VS Code 需要 1.96 或更新版本。
+<<<<<<< HEAD
 2. 打开扩展面板，点击右上角 `…` → **从 VSIX 安装…**，选择 `dist` 目录生成的最新 VSIX 安装包。
+=======
+2. 打开扩展面板，点击右上角 `…` → **从 VSIX 安装…**，选择 `dist` 目录生成的 `astoryx-language-tools-0.1.1.vsix`。
+>>>>>>> 3a6fe6b53fb025a18049f03f82e24954f67d920d
 3. 打开你的 ASER 项目目录，建议目录中同时有 `Stories`、`Rules` 和 `Resources`。也可以直接打开项目中的 `.astoryx` 文件。
 4. 确认第二行是 `#useRule:BaseRule` 或项目实际使用的规则名。规则来自该项目的 `Rules/规则名.json`，不会用内置版本覆盖。
 5. 编辑文件时会出现候选、参数提示、悬停说明和错误波浪线。按 `Ctrl+Space` 手动打开候选，按 `Ctrl+Shift+Space` 手动打开参数提示。
