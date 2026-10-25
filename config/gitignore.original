@@ -1,0 +1,15 @@
+node_modules/
+out/
+*.vsix
+.test-profile/
+.test-extensions/
+.dev-profile/
+.npm-cache/
+.test-*/
+host-*.log
+color-host-*.log
+smoke-result.json
+.test-live-result.json
+.test-diagnostics-result.json
+.test-official-result.json
+.test-new-file-result.json

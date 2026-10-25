@@ -1,0 +1,3 @@
+# Public documentation: keep only the diagnostic message table.
+/docs/*
+!/docs/ERROR_MESSAGES.md

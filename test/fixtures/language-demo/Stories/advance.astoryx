@@ -1,0 +1,9 @@
+AdvanceRule 乱序参数示例
+#useRule:AdvanceRule
+#version:2
+
+背景：none,@IsBlocker=false,@FadeInTime=1
+音乐：none,@Position=0,@Volume=0.5
+遮罩：true
+旁白	按 Ctrl+Space 查看候选；输入 ,@ 后补全参数名。
+背景：无,@FadeInTime=1

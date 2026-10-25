@@ -1,0 +1,287 @@
+{
+  "name": "astoryx-language-tools",
+  "displayName": "AStoryX Language Tools",
+  "description": "AStoryX 规则驱动补全、参数提示与静态检查，无需 Python。",
+  "version": "0.1.0",
+  "publisher": "astoryx-local",
+  "license": "MIT",
+  "homepage": "https://www.yuque.com/tsingyayin/aser",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Snippets"
+  ],
+  "keywords": [
+    "astoryx",
+    "ASER",
+    "AStoryX"
+  ],
+  "main": "./out/src/extension.js",
+  "activationEvents": [
+    "onLanguage:astoryx",
+    "onTaskType:astoryx",
+    "workspaceContains:**/Stories/*.astoryx"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "astoryx",
+        "aliases": [
+          "AStoryX",
+          "astoryx"
+        ],
+        "extensions": [
+          ".astoryx"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "astoryx",
+        "scopeName": "source.astoryx",
+        "path": "./syntaxes/astoryx.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "astoryx",
+        "path": "./snippets/astoryx.json"
+      }
+    ],
+    "colors": [
+      {
+        "id": "astoryx.speakerForeground",
+        "description": "AStoryX 对话人物名。",
+        "defaults": {
+          "dark": "#569CD6",
+          "light": "#0451A5",
+          "highContrast": "#6CB6FF",
+          "highContrastLight": "#003E8C"
+        }
+      },
+      {
+        "id": "astoryx.dialogueForeground",
+        "description": "AStoryX 有人物名的对话正文。",
+        "defaults": {
+          "dark": "#CE9178",
+          "light": "#A54800",
+          "highContrast": "#F2B190",
+          "highContrastLight": "#8A3400"
+        }
+      },
+      {
+        "id": "astoryx.characterForeground",
+        "description": "AStoryX 控制器行首与角色图片声明主体的共用颜色。",
+        "defaults": {
+          "dark": "#DCDCAA",
+          "light": "#795E26",
+          "highContrast": "#DCDCAA",
+          "highContrastLight": "#795E26"
+        }
+      },
+      {
+        "id": "astoryx.narrationForeground",
+        "description": "AStoryX 无人物名独白、自由文本和旁白。",
+        "defaults": {
+          "dark": "editor.foreground",
+          "light": "editor.foreground",
+          "highContrast": "editor.foreground",
+          "highContrastLight": "editor.foreground"
+        }
+      },
+      {
+        "id": "astoryx.parameterForeground",
+        "description": "AStoryX 对话、角色和旁白控制器的可选参数及前缀。",
+        "defaults": {
+          "dark": "editor.foreground",
+          "light": "editor.foreground",
+          "highContrast": "editor.foreground",
+          "highContrastLight": "editor.foreground"
+        }
+      }
+    ],
+    "commands": [
+      {
+        "command": "astoryx.newProject",
+        "title": "AStoryX: 新建 AStoryX 项目",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "astoryx.newFile",
+        "title": "AStoryX: 新建 AStoryX 文件",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "astoryx.checkProject",
+        "title": "AStoryX: 检查项目",
+        "icon": "$(play)"
+      },
+      {
+        "command": "astoryx.checkFile",
+        "title": "AStoryX: 检查当前文件"
+      },
+      {
+        "command": "astoryx.showOutput",
+        "title": "AStoryX: 查看检查日志"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "astoryx.newFile",
+          "when": "resourceScheme == file",
+          "group": "2_workspace@1"
+        },
+        {
+          "command": "astoryx.newProject",
+          "when": "resourceScheme == file",
+          "group": "2_workspace@2"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "astoryx.checkProject",
+          "when": "resourceLangId == astoryx",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "astoryx.checkFile",
+          "when": "resourceLangId == astoryx",
+          "group": "astoryx"
+        }
+      ]
+    },
+    "taskDefinitions": [
+      {
+        "type": "astoryx",
+        "required": [],
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "项目根目录，省略时使用当前工作区。"
+          }
+        }
+      }
+    ],
+    "configuration": {
+      "title": "AStoryX",
+      "properties": {
+        "astoryx.projectRoot": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "description": "项目根目录（包含 Stories、Rules），支持相对于工作区的路径。默认自动查找。"
+        },
+        "astoryx.resources.officialAssetsEnabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "读取 ASE-Remake 官方资源清单、名称与差分配置，用于候选和诊断。"
+        },
+        "astoryx.resources.officialConfigDirectory": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "description": "包含 officialAssets_collections/aliases/userConfigs.json 的 Configs 目录。空值在 Windows 自动读取 AppData/LocalLow/Gradus/ASE-Remake/Configs；相对路径以项目根目录为基准。项目 Configs 中的同名 aliases/userConfigs 文件优先。"
+        },
+        "astoryx.highlighting.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "按当前项目规则区分人物名、台词、角色声明和旁白，并使用支持主题切换的 AStoryX 配色。"
+        },
+        "astoryx.inlayHints.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "在控制器参数值前显示参数名内联提示，例如 SlotIndex: 1；不修改文件内容。Character、Variant 及普通对白正文不加标签，已写明名称的参数不重复标注。"
+        },
+        "astoryx.validation.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "编辑时进行基础静态检查，以红色/黄色波浪线标记错误/警告。"
+        },
+        "astoryx.validation.delay": {
+          "type": "number",
+          "default": 350,
+          "scope": "resource",
+          "minimum": 100,
+          "maximum": 3000,
+          "description": "编辑后检查延迟（毫秒）。"
+        },
+        "astoryx.validation.resourceChecks": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "检查本地与官方资源、别名来源及官方差分；资源缺失报 E2001，已收录角色的差分缺失报 W1004，原始 ID 差分未收录报 W1005。"
+        },
+        "astoryx.validation.maxLineLength": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "default": 60,
+          "scope": "resource",
+          "minimum": 1,
+          "description": "一条逻辑正文的建议字数，默认 60 个可见字符；中文字符各计一字。对话、旁白和自由文本超出时统一报告 W1002，提示显示效果可能会受到影响。null 表示关闭字数检查。"
+        },
+        "astoryx.validation.maxFiles": {
+          "type": "integer",
+          "default": 5000,
+          "scope": "resource",
+          "minimum": 1,
+          "maximum": 50000,
+          "description": "单次项目检查的文件上限。超出时显示检查不完整。"
+        }
+      }
+    },
+    "configurationDefaults": {
+      "workbench.colorCustomizations": {
+        "editorInlayHint.parameterForeground": "#FFFFFF"
+      },
+      "[astoryx]": {
+        "editor.insertSpaces": false,
+        "editor.detectIndentation": false,
+        "editor.inlayHints.enabled": "on",
+        "editor.unicodeHighlight.ambiguousCharacters": false,
+        "editor.quickSuggestions": {
+          "other": "on",
+          "comments": "off",
+          "strings": "on"
+        },
+        "editor.wordBasedSuggestions": "off"
+      }
+    }
+  },
+  "scripts": {
+    "compile": "node ../tools/build.mjs",
+    "watch": "tsc -watch -p ../config/tsconfig.json",
+    "test": "npm run compile && node --test out/test/core.test.js out/test/reporting.test.js out/test/official-assets.test.js out/test/inlay-hints.test.js out/test/diagnostic-codes.test.js out/test/aliases.test.js out/test/project-template.test.js",
+    "vscode:prepublish": "node ../tools/build.mjs",
+    "package": "node ../tools/package.mjs",
+    "test:host": "npm run compile && node ../tools/test-host.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "1.96.0",
+    "@vscode/vsce": "^3.3.0",
+    "typescript": "^5.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cgzhong17/YSS-VSCode-Extension.git"
+  }
+}

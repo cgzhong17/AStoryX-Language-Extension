@@ -1,0 +1,13 @@
+{
+  "name": "AStoryX",
+  "scopeName": "source.astoryx",
+  "patterns": [
+    { "name": "comment.line.double-slash.astoryx", "match": "^\\s*//.*$" },
+    { "name": "keyword.control.directive.astoryx", "match": "^#[A-Za-z]+\\b" },
+    { "name": "string.quoted.protected.astoryx", "begin": "&\\{", "end": "\\}" },
+    { "name": "variable.other.astoryx", "match": "\\$\\[[^\\]]*\\]" },
+    { "name": "variable.parameter.astoryx", "match": "\\$\\([^)]*\\)" },
+    { "name": "entity.other.attribute-name.astoryx", "match": ",@[A-Za-z][A-Za-z0-9]*=" },
+    { "name": "keyword.control.boolean.astoryx", "match": "(?i)(?<![\\w])(?:true|false)(?![\\w])" }
+  ]
+}
