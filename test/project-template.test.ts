@@ -19,7 +19,7 @@ test('new projects contain the standard empty resource structure and usable rule
   for(const directory of PROJECT_DIRECTORIES)assert.ok((await fs.stat(path.join(root,directory))).isDirectory(),directory);
   for(const category of ['Background','Char_Picture','Char_Spine','Music','SoundEffect','VisualEffect'])assert.deepEqual(await fs.readdir(path.join(root,'Resources',category)),['.gitkeep']);
   const script=path.join(root,'Stories/main.astoryx'),text=await fs.readFile(script,'utf8');
-  assert.equal(text,'由VSCode Extention编辑\n#useRule:BaseRule\n#version:2\n\n#aliases\n#endaliases\n');
+  assert.equal(text,'由VSCode Extension编辑\n#useRule:BaseRule\n#version:2\n\n#aliases\n#endaliases\n');
   for(const rule of ['BaseRule','AdvanceRule']){
     const loaded=await loadDocument(script,text.replace('BaseRule',rule),[root]);
     assert.equal(loaded.ruleFile,path.join(root,'Rules',rule+'.json'));assert.deepEqual(loaded.issues,[]);

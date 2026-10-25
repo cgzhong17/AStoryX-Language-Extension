@@ -24,7 +24,7 @@ export async function run(){
     for(const name of ['', '../escape','folder/file','con'])assert.throws(()=>storyFileName(name));
     const target=vscode.Uri.file(path.join(directory,'Stories',storyFileName('新建剧本')));
     const document=await createStoryFile(target);
-    const expected='由VSCode Extention编辑\n#useRule:BaseRule\n#version:2\n\n#aliases\n#endaliases\n';
+    const expected='由VSCode Extension编辑\n#useRule:BaseRule\n#version:2\n\n#aliases\n#endaliases\n';
     assert.equal(document.getText(),expected);assert.equal(await fs.readFile(target.fsPath,'utf8'),expected);
     assert.equal(document.languageId,'astoryx');assert.equal(vscode.window.activeTextEditor?.document.uri.toString(),target.toString());
     record('Creating a Chinese-named file saves the exact UTF-8 template and opens it as AStoryX');

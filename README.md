@@ -25,22 +25,20 @@ AstoryX Language Extension/
 └─ dist/         VSIX 安装包
 ```
 
-扩展根目录为 `extension`，其 `package.json` 是 VS Code 使用的清单。公开文档为根目录 README、[更新记录](CHANGELOG.md) 和 [错误码与提示消息表](docs/ERROR_MESSAGES.md)，编译时自动复制到扩展目录用于打包。许可文件位于 `LICENSE`；生成副本、依赖和日志均由 `.gitignore` 排除。
+扩展根目录为 `extension`，其 `package.json` 是 VS Code 使用的清单。公开文档为根目录 README、[更新记录](CHANGELOG.md) 和 [错误码与提示消息表](docs/ERROR_MESSAGES.md)，编译时自动复制到扩展目录用于打包。许可文件位于 `LICENSE`；`dist` 中的 VSIX 纳入版本管理，生成副本、依赖和日志由 `.gitignore` 排除。
 
 ## 安装和开始使用
 
-1. VS Code 需要 1.96 或更新版本。
-<<<<<<< HEAD
-2. 打开扩展面板，点击右上角 `…` → **从 VSIX 安装…**，选择 `dist` 目录生成的最新 VSIX 安装包。
-=======
-2. 打开扩展面板，点击右上角 `…` → **从 VSIX 安装…**，选择 `dist` 目录生成的 `astoryx-language-tools-0.1.1.vsix`。
->>>>>>> 3a6fe6b53fb025a18049f03f82e24954f67d920d
-3. 打开你的 ASER 项目目录，建议目录中同时有 `Stories`、`Rules` 和 `Resources`。也可以直接打开项目中的 `.astoryx` 文件。
-4. 确认第二行是 `#useRule:BaseRule` 或项目实际使用的规则名。规则来自该项目的 `Rules/规则名.json`，不会用内置版本覆盖。
-5. 编辑文件时会出现候选、参数提示、悬停说明和错误波浪线。按 `Ctrl+Space` 手动打开候选，按 `Ctrl+Shift+Space` 手动打开参数提示。
-6. 点击状态栏，或执行 **AStoryX: 检查项目**，扫描项目 `Stories` 下全部 `.astoryx`。
+需要 VS Code 1.96 或更新版本，可选择以下任一安装方式：
 
-编辑器右上角 ▶ 用于启动 ASER 调试，播放当前剧本。静态检查发现问题后，在 Problems 面板（`Ctrl+Shift+M`）点击对应条目跳转到行列；详细日志通过 **AStoryX: 查看检查日志** 打开。
+1. **扩展市场安装**：在 VS Code 扩展面板搜索 **AStoryX Language Tools** 并安装，也可搜索 `@id:cgzhong17.astoryx-language-tools` 精确定位。
+2. **VSIX 安装**：下载本仓库 [dist](dist) 中的最新 VSIX，在扩展面板点击右上角 `…` → **从 VSIX 安装…**，选择下载的安装包。
+
+安装后打开包含 `Stories`、`Rules` 和 `Resources` 的 ASER 项目，或直接打开项目内的 `.astoryx` 文件。第二行使用 `#useRule:BaseRule` 或项目实际规则名，规则从项目的 `Rules` 目录读取。
+
+编辑时提供补全、参数提示、悬停说明和错误波浪线；按 `Ctrl+Space` 手动补全，按 `Ctrl+Shift+Space` 查看参数提示。右上角 ▶ 启动 ASER 调试；点击状态栏或执行 **AStoryX: 检查项目**，扫描项目内的全部剧本。
+
+检查结果在 Problems 面板（`Ctrl+Shift+M`）显示，详细日志通过 **AStoryX: 查看检查日志** 打开。
 
 `examples/demo` 是官方演示项目，F5 默认打开 `Stories/00_基础示例上.astoryx`。`test/fixtures/language-demo` 提供 BaseRule/AdvanceRule 测试素材。
 
@@ -80,7 +78,7 @@ demo 用于本地 F5 调试，`examples` 和 `test` 均排除在 VSIX 安装包�
 新文件会保存并自动打开，初始内容为：
 
 ```text
-由VSCode Extention编辑
+由VSCode Extension编辑
 #useRule:BaseRule
 #version:2
 
